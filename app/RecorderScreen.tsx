@@ -1,4 +1,4 @@
-// RecorderScreen.tsx
+
 import React, { useRef, useState, useEffect } from "react";
 import {
   View,
@@ -112,7 +112,7 @@ export default function RecorderScreen({
     }
   };
 
-  // Stop recording
+ 
   const stopRecording = async () => {
     if (!recording) return;
 
@@ -185,7 +185,7 @@ export default function RecorderScreen({
         </TouchableOpacity>
       </View>
 
-      {/* ---------- Menu Modal ---------- */}
+      
       <MenuModal
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -199,7 +199,7 @@ export default function RecorderScreen({
         }}
       />
 
-      {/* ---------- Settings Modal ---------- */}
+     
       <Modal
         visible={settingsModal}
         transparent
@@ -276,7 +276,7 @@ export default function RecorderScreen({
   );
 }
 
-/* ---------- MenuModal component ---------- */
+
 function MenuModal({
   visible,
   onClose,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   recordInner: { width: 30, height: 30 },
 
-  /* Menu modal panel */
+ 
   modalOverlay: {
     position: "absolute",
     top: 0,
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   menuItem: { paddingVertical: 12 },
   menuItemText: { fontSize: 18, color: "#000" },
 
-  /* Centered modals */
+ 
   centeredModal: {
     flex: 1,
     justifyContent: "center",
@@ -411,3 +411,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+
