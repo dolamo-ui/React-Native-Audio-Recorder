@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, StyleSheet, Alert } from "react-native";
 import { Audio } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import SearchBar from "../components/SearchBar";
 import RecordingItemCard from "../components/RecordingItemCard";
-import { RecordingItem, Settings } from "../types";
+import { RecordingItem } from "../types";
+
+const STORAGE_KEY = "recordings";
 
 export default function SavedScreen({ recordings, setRecordings }: any) {
   const [search, setSearch] = useState("");
@@ -14,36 +18,45 @@ export default function SavedScreen({ recordings, setRecordings }: any) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
 
-  
-  
-  
+  // ------------------------------
+  // Load recordings on mount
+  // ------------------------------
   useEffect(() => {
-    return () => {
-      void stopPlayback(); 
-    };
+    loadRecordings();
   }, []);
 
+  const loadRecordings = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(STORAGE_KEY);
+      if (saved) setRecordings(JSON.parse(saved));
+    } catch (e) {
+      console.log("Failed to load recordings:", e);
+    }
+  };
+
+  // ------------------------------
+  // Stop playback on unmount
+  // ------------------------------
+  useEffect(() => {
+    return () => void stopPlayback();
+  }, []);
+
+  // ------------------------------
+  // Play recording
+  // ------------------------------
   const play = async (rec: RecordingItem) => {
     try {
-      if (sound) {
-        const s = await sound.getStatusAsync();
-        if (s.isLoaded) {
-          await sound.stopAsync();
-          await sound.unloadAsync();
-        }
-      }
+      await stopPlayback();
 
       const newSound = new Audio.Sound();
       await newSound.loadAsync({ uri: rec.uri });
 
       newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setCurrentPosition(Math.floor(status.positionMillis / 1000));
+        if (!status.isLoaded) return;
 
-          if (status.didJustFinish) {
-            void stopPlayback();
-          }
-        }
+        setCurrentPosition(Math.floor(status.positionMillis / 1000));
+
+        if (status.didJustFinish) void stopPlayback();
       });
 
       await newSound.playAsync();
@@ -54,54 +67,82 @@ export default function SavedScreen({ recordings, setRecordings }: any) {
     }
   };
 
+  // ------------------------------
+  // Pause
+  // ------------------------------
   const pause = async () => {
     if (!sound) return;
     const st = await sound.getStatusAsync();
     if (st.isLoaded) await sound.pauseAsync();
   };
 
+  // ------------------------------
+  // Rewind 1 second
+  // ------------------------------
   const rewind = async () => {
     if (!sound) return;
-    const status = await sound.getStatusAsync();
-    if (status.isLoaded) {
-      const newPos = Math.max(0, status.positionMillis - 1000);
-      await sound.setPositionAsync(newPos);
-      setCurrentPosition(Math.floor(newPos / 1000));
-    }
+    const st = await sound.getStatusAsync();
+    if (!st.isLoaded) return;
+
+    const newPos = Math.max(0, st.positionMillis - 1000);
+    await sound.setPositionAsync(newPos);
+    setCurrentPosition(Math.floor(newPos / 1000));
   };
 
+  // ------------------------------
+  // Stop playback
+  // ------------------------------
   const stopPlayback = async () => {
+    if (!sound) return;
     try {
-      if (!sound) return;
       const st = await sound.getStatusAsync();
       if (st.isLoaded) {
         await sound.stopAsync();
         await sound.unloadAsync();
       }
-      setSound(null);
-      setCurrentPlayingId(null);
-      setCurrentPosition(0);
     } catch (e) {
       console.log("Stop error:", e);
     }
+
+    setSound(null);
+    setCurrentPlayingId(null);
+    setCurrentPosition(0);
   };
 
+  // ------------------------------
+  // Delete recording
+  // ------------------------------
   const remove = (id: number) => {
     Alert.alert("Delete", "Remove this recording?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => {
-          setRecordings((prev: RecordingItem[]) =>
-            prev.filter((x) => x.id !== id)
-          );
+        onPress: async () => {
+          const updated = recordings.filter((x: RecordingItem) => x.id !== id);
+          setRecordings(updated);
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
           if (currentPlayingId === id) void stopPlayback();
         },
       },
     ]);
   };
 
+  // ------------------------------
+  // Save edited title
+  // ------------------------------
+  const saveEditing = async (rec: RecordingItem) => {
+    const updatedList = recordings.map((item: RecordingItem) =>
+      item.id === rec.id ? { ...item, title: editingText } : item
+    );
+    setRecordings(updatedList);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+    setEditingId(null);
+  };
+
+  // ------------------------------
+  // Filter recordings
+  // ------------------------------
   const filtered = recordings.filter((r: RecordingItem) =>
     (r.title || "").toLowerCase().includes(search.toLowerCase())
   );
@@ -133,14 +174,7 @@ export default function SavedScreen({ recordings, setRecordings }: any) {
                 setEditingId(rec.id);
                 setEditingText(rec.title || "");
               }}
-              onSaveEditing={() => {
-                setRecordings((prev: RecordingItem[]) =>
-                  prev.map((x) =>
-                    x.id === rec.id ? { ...x, title: editingText } : x
-                  )
-                );
-                setEditingId(null);
-              }}
+              onSaveEditing={() => saveEditing(rec)}
               onDelete={() => remove(rec.id)}
             />
           );
@@ -151,6 +185,6 @@ export default function SavedScreen({ recordings, setRecordings }: any) {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, paddingTop: 50, backgroundColor: "#fff" },
+  page: { flex: 1, paddingTop: 50, backgroundColor: "#fff", paddingHorizontal: 16 },
   header: { textAlign: "center", fontSize: 24, fontWeight: "700", marginBottom: 10 },
 });
