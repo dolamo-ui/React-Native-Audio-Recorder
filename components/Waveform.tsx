@@ -1,4 +1,3 @@
-
 import React, { FC, useRef, useEffect } from "react";
 import { View, Animated, StyleSheet, Text, Easing } from "react-native";
 
@@ -12,10 +11,9 @@ export const WaveformTimer: FC<Props> = ({ recording, recDuration, formatTime })
   
   const bars = Array.from({ length: 22 }, () => useRef(new Animated.Value(0.5)).current);
 
-  const blinkAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
   
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
   const animateBars = () => {
     const animations = bars.map((bar) =>
       Animated.sequence([
@@ -33,6 +31,7 @@ export const WaveformTimer: FC<Props> = ({ recording, recDuration, formatTime })
         }),
       ])
     );
+
     Animated.parallel(animations).start(() => {
       if (recording) animateBars();
     });
@@ -42,32 +41,23 @@ export const WaveformTimer: FC<Props> = ({ recording, recDuration, formatTime })
     if (recording) {
       animateBars();
 
-      
+     
       Animated.loop(
         Animated.sequence([
           Animated.timing(blinkAnim, { toValue: 0.2, duration: 500, useNativeDriver: true }),
           Animated.timing(blinkAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         ])
       ).start();
-
-    
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.15, duration: 600, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        ])
-      ).start();
     } else {
-      
+    
       bars.forEach((bar) => bar.setValue(0.5));
-      pulseAnim.setValue(1);
       blinkAnim.setValue(1);
     }
   }, [recording]);
 
   return (
     <View style={{ alignItems: "center", marginVertical: 90 }}>
-      
+     
       <View style={styles.waveRow}>
         {bars.map((bar, i) => (
           <Animated.View
@@ -80,7 +70,7 @@ export const WaveformTimer: FC<Props> = ({ recording, recDuration, formatTime })
         ))}
       </View>
 
-      
+     
       <View style={styles.timerRow}>
         <Animated.View
           style={{
@@ -94,17 +84,6 @@ export const WaveformTimer: FC<Props> = ({ recording, recDuration, formatTime })
         />
         <Text style={styles.timerText}>{recording ? formatTime(recDuration) : "00:00"}</Text>
       </View>
-
-     
-      <Animated.View
-        style={{
-          width: 60,
-          height: 60,
-          borderRadius: recording ? 4 : 30,
-          backgroundColor: "#ff3b5c",
-          transform: [{ scale: pulseAnim }],
-        }}
-      />
     </View>
   );
 };
