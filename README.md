@@ -15,6 +15,12 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```bash
    npx expo start
    ```
+## 📱 Download the App
+Click below to download the latest APK:
+
+👉 YOUR_GOOGLE_DRIVE_LINK_HERE= https://drive.google.com/file/d/1PHo3Hd3HYOTxUTDM93xypAgFOwqmwH0P/view?usp=drivesdk
+
+
 
 In the output, you'll find options to open the app in a
 
